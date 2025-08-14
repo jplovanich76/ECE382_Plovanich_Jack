@@ -69,10 +69,8 @@ Loop1   CMP     R0, #5          ; Observe PSR after executing this instruction.
         B       Loop1           ; Go to Loop1
 
 L2      MOV     R0, #5
-Loop2   SUB     R0, #1
-        CMP     R0, #0          ; Observe PSR after executing this instruction.
-        BHS     Loop2           ; Brach Higher or Same, if R0 >= 0, go to Loop2
-                                ; If R0 < 0, exit the loop.
+Loop2   SUB     R0, R0, #1
+        BNE     Loop2
 
 
 Stall   B   Stall               ; stall here - stay here forever, equivalent to while(1); in C

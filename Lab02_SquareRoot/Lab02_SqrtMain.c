@@ -40,7 +40,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 void main(void) {
 
 
-    uint16_t s = 63001;
+    uint16_t s = 29583;
     uint16_t t = s/10+1;    // t = sqrt(s),  initial guess
     for(int i = 16; i != 0; --i) {   // guaranteed to finish
         t = ((t*t + s)/t)/2;
