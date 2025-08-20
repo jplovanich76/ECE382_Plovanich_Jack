@@ -83,30 +83,42 @@ Loop1:
 Loop2:
 ; ============ Add your code below ==============================
 ; solution
-								; Compare i with m (i > n / 2?)
-								; If i > m, the number is prime (branch to True)
-                                ; Caution: are you checking signed or unsigned numbers?
+
+		CMP   R6, R5 		    ; Compare i with m (i > n / 2?)
+		BHI   True				; If i > m, the number is prime (branch to True)
+                                ; UNSIGNED NUMBERS - not negative
 
 ; ============= End of your code ================================
 
-        ; Check if the number is divisible by i
+                                ; Check if the number is divisible by i
         UDIV    R8, R0, R6      ; Divide the number by i (R0 / R6) and store the result in R8
         MUL     R9, R8, R6      ; Multiply the quotient by i and store the result in R9
         CMP     R0, R9          ; Compare the original number with the product (n == int(n / i) * i?)
 
 ; ============ Add your code below ==============================
+
 ; solution
+    ;if (r0 == r9)
+        ;branch false
+    ;else
+        ;increment i
+        ; branch loop 2
 
+    CMP     R0, R9
+    BEQ     False
+    ADD     R6, #1
+    BNE     Loop2
 
+True:
+    MOV     R11, #1
+    STRB    R11, [R2], #1
+    ADD     R6, #1
+    B       Loop1
 
-
-True
-
-
-
-False
-
-
+False:
+    MOV     R12, #0
+    STRB    R12, [R2], #1
+    B       Loop1
 
 
 ; ============= End of your code ================================
