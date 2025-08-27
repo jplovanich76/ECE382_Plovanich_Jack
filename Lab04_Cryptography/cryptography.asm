@@ -45,64 +45,62 @@ EOM    .byte  '#'
 
 
 ;------------ Encrypt ------------
-; This subroutine takes the address of a plain text message and a key,
-;   then encrypts the message by performing an XOR operation.
-;   The encrypted result is stored at the specified memory location.
-;   The encryption stops when EOM is encountered.
-;
-; Inputs:
-;   R0 - Address of the plain text message
-;   R1 - Key for XOR encryption
-;   R2 - Address to store the encrypted message
-;
-; Return:
-;   None
+
 Encrypt:   .asmfunc
-; ============ Add your code and comments below ===================
+    PUSH {R5, R6, R7, R8, R9, LR}
 
-    ; Use EOM defined at line 44 for '#'
+    ; preserving critical info
+    MOV R5, R0         ;R5 -> addy of plain msg
+    MOV R6, R1         ;R6 -> key
+    MOV R7, R2         ;R7 -> addy to store encrypted msg
+    LDRB R9, EOM
+EncryptLoop:
+    LDRB R8, [R5]      ;R8 -> load plain msg value to R8
+    MOV R1, R6
+    MOV R0, R8
 
+    BL XOR_bytes       ;XOR
+    STRB R0, [R7]      ;R0 -> store encrypted value at R0
+    CMP R8, R9         ;check for EOM, then branch if true
+    BEQ Done
+    ADD R5, R5, #1     ;increments - plain msg (addy)
+    ADD R7, R7, #1     ;increments - encrypted msg (addy)
+    B EncryptLoop
+Done:
+    POP {R5, R6, R7, R8, R9, LR}
+    BX LR
 
-
-
-    ; You must use the XOR_bytes function for exclusive or!
-    BL XOR_bytes        ; XOR_Bytes
-
-
-
-
-
-; =============== End of your code ================================
     .endasmfunc
 
+;---
 
 ;------------ Decrypt ------------
-; This subroutine takes the address of an encrypted message and a key,
-;   then decrypts the message by performing an XOR operation.
-;   The decrypted result is stored at the specified memory location.
-;   The decryption stops when the EOM is encountered.
-;
-; Inputs:
-;   R0 - Address of the encrypted message
-;   R1 - Key for XOR decryption
-;   R2 - Address to store the decrypted message
-;
-; Return:
-;   None
+
 Decrypt:    .asmfunc
-; ============ Add your code and comments below ===================
+    PUSH {R5, R6, R7, R8, R9, LR}
 
-    ; Use EOM defined at line 44 for '#'
+    ; preserving critical info
+    MOV R5, R0         ;R5 -> addy of encrypted msg
+    MOV R6, R1         ;R6 -> key
+    MOV R7, R2         ;R7 -> addy of decrypted msg
+    LDRB R9, EOM
+DecryptLoop:
+    LDRB R8, [R5]      ;R8 -> load encrypted value to R8
+    MOV R1, R6         ;copy R6 to R1
+    MOV R0, R8         ;copy R8 to R0
 
+    BL XOR_bytes       ;XOR
+    STRB R0, [R7]      ;R0 -> storing returned decrypted value at R0
+    CMP R0, R9         ;check for EOM, then branch if true
+    BEQ Done2
+    ADD R7, R7, #1     ;increments - decrypted msg (addy)
+    ADD R5, R5, #1     ;increments - encrypted msg (addy)
+    B DecryptLoop
+Done2:
+    POP {R5, R6, R7, R8, R9, LR}
+    BX LR
 
-
-
-    ; You must use the XOR_bytes function for exclusive or!
-    BL XOR_bytes        ; XOR_Bytes
-
-
-
-
-; =============== End of your code ================================
     .endasmfunc
     .end
+
+;---
