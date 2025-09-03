@@ -401,12 +401,11 @@ void Nokia5110_OutChar(char data) {
 // Outputs: none
 // Assumes: LCD is in default horizontal addressing mode (V = 0)
 void Nokia5110_OutString(const char* ptr){
-
-    // You write this as part of Lab 5
-    // You must use Nokia5110_OutChar
+    while (*ptr != '\0') {
+        Nokia5110_OutChar(*ptr++);
+    }
 
 }
-
 
 #define STR_NUM_LENGTH 12   // To store a string for 32-bit signed and unsigned integers.
 static char Buffer[STR_NUM_LENGTH];
