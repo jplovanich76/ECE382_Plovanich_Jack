@@ -400,11 +400,10 @@ void Nokia5110_OutChar(char data) {
 // Inputs: ptr pointer to NULL-terminated ASCII string
 // Outputs: none
 // Assumes: LCD is in default horizontal addressing mode (V = 0)
-void Nokia5110_OutString(const char* ptr){
-    while (*ptr != '\0') {
+void Nokia5110_OutString(const char* ptr){                          //BONUS - DONE IN 2 LINES !!!!!!!
+    while (*ptr != '\0') {                                          //while the value at that address isnt the end (null term), print the value and iterate to the next address
         Nokia5110_OutChar(*ptr++);
     }
-
 }
 
 #define STR_NUM_LENGTH 12   // To store a string for 32-bit signed and unsigned integers.
@@ -440,26 +439,27 @@ static int Nokia_Num2String(uint32_t n) {
 
 
 void Nokia5110_OutUDec(uint32_t n, int min_length){
-    // Write this as part of Lab 5
+    int count = Nokia_Num2String(n);                                    //given
 
-    // Convert the number into a reversed string.
-    int count = Nokia_Num2String(n);
+    if (count >= min_length){                                           //iterate through the string, account for starting from back
+        for (int i = 0; i < count; i++){
+            Nokia5110_OutChar(Buffer[count - (i + 1)]);
+        }
+    }
+    else {                                                              //if we need spaces, add spaces and iterate using min_length
+        while (count != 0) {
+            if (min_length > count) {                                   //our "if" was the easy part - no spaces needed
+                Nokia5110_OutChar(' ');                                 //count is the length of the string, and min_length is the minimum length
+                min_length--;                                           //we iterate using min_length - this becomes the number of spaces needed to be filled (dynamic, changes)
+            }
+            else {                                                      //this is the other case; when the string is longer than min length
+                Nokia5110_OutChar(Buffer[min_length - 1]);              //account for printing from the back
+                min_length--;                                           //iterate both number of spaces left (min_length) and the length of the string (count)
+                count--;
+            }
 }
-
-
-void Nokia5110_OutSDec(int32_t n, int min_length){
-    // Write this as part of Lab 5
-
-    // assign the magnitude of n to x
-    // Ensure the magnitude of -2147483648(0x80000000) is 2147483648(0x80000000).
-    // You are not allowed to use the built-in abs() function.
-    uint32_t x = 0;
-
-    // Convert the number into a reversed string.
-    int count = Nokia_Num2String(x);
-
 }
-
+}
 
 //********HexSingle_Helper*****************
 // Helper function to display a single hex digit.
@@ -475,6 +475,38 @@ static void HexSingle_Helper(uint8_t n){
         Nokia5110_OutChar(n+'0');        // ones digit
     }
 }
+
+void Nokia5110_OutSDec(int32_t n, int min_length){
+    uint32_t x = 0;                                             //given
+
+    if (n < 0) {                                                //if number is negative, we set x to be the abs value
+        x = (uint32_t)(-n);
+    }
+    else {                                                      //unchanged value, positive number
+        x = (uint32_t)(n);
+    }
+
+    int count = Nokia_Num2String(x);                            //x is set to the length of the number, which became a string
+    int count2 = count;                                         //this is a width that takes into account the additional width from the negative sign
+                                                                //however, initialize it as count for standard (positive) numbers
+    if (n < 0) {                                                //if negative, this increases (as stated above
+        count2 = count + 1;
+    }
+
+    while (min_length > count2) {                               //iterate via min_length, compare to width to determine spaces needed
+        Nokia5110_OutChar(' ');
+        min_length--;
+    }
+
+    if (n < 0) {                                                //negative comes AFTER spaces, as to not distort the spacing between the sign and numbers on the LCD
+        Nokia5110_OutChar('-');
+    }
+
+    for (int i = 0; i < count; i++) {                           //iterate though the string (count) via for-loop
+        Nokia5110_OutChar(Buffer[count - (i + 1)]);             //use Buffer, as the string is stored here - use count as the address - account for starting from back
+    }
+}
+
 
 //********Nokia5110_Out8Hex*****************
 // Output two hex digits to the Nokia 5110 LCD.

@@ -121,7 +121,7 @@ Recur   PUSH {R4, LR}   ; Preserve registers
         MOV R4, R0      ; Save n for later use
         SUB R0, R0, #1  ; n-1
         BL fact_rec     ; fact_rec(n-1) for (n-1)!
-        MUL R0, [R0], R4  ; n * fact_rec(n-1)
+        MUL R0, R0, R4  ; n * fact_rec(n-1)
         POP {R4, LR}
         BX LR           ; Restore registers and return
 ; ============= End of your code ================================
