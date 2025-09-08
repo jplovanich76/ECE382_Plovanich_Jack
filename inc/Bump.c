@@ -56,12 +56,17 @@ policies, either expressed or implied, of the FreeBSD Project.
 // Activate interface pullup
 // pins 7,6,5,3,2,0
 void Bump_Init(void){
-    // write this as part of Homework 8
     // 1) configure P4.7-P4.5, P4.3, P4.2, and P4.0 as GPIO
+    P4->SEL0 &= ~(0xED);            //set to 1, but since its active-low, its flipped, hence the &= ~
+    P4->SEL1 &= ~(0xED);            //0xED ---> 1110 1101 ---> this ensures 7, 6, 5, 3, 2, and 0 are addressed (the 1's)
+
     // 2) make P4.7-P4.5, P4.3, P4.2, and P4.0 in
-    // 3) enable pull resistors on P4.7-P4.5, P4.3, P4.2, and P4.0
-    //    P4.7-P4.5, P4.3, P4.2, and P4.0 are pull-up
-  
+    P4->DIR &= ~(0xED);             //set to 1
+
+    // 3) enable pull resistors on P4.7-P4.5, P4.3, P4.2, and P4.0 --- P4.7-P4.5, P4.3, P4.2, and P4.0 are pull-up
+    P4->REN |= (0xED);              //set to 0
+    P4->OUT |= (0xED);              //set to 0
+
 }
 
 

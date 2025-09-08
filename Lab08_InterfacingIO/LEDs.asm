@@ -14,10 +14,10 @@
 ; The dots between addresses are for easy reading.
 ; Do not add dots in your code.
         .align 4
-P1SEL0  .word 0  ; replace 0 with the address
-P1SEL1  .word 0  ; replace 0 with the address
-P1DIR   .word 0  ; replace 0 with the address
-P1OUT   .word 0  ; replace 0 with the address
+P1SEL0  .word 0x40000C0A
+P1SEL1  .word 0x40000C0C
+P1DIR   .word 0x40000C04
+P1OUT   .word 0x40000C02
 
 ; Use this delay for Homework 8.
 ; You need to adjust this value in Lab8.
@@ -74,22 +74,24 @@ LED_On:         .asmfunc
 ; To toggle a bit, you don't need to know whether it is currently on or off.
 ; Do not use LED_Off or LED_On
 LED_Toggle: 	.asmfunc
-; add your code here
-
-
+    LDR R1, P1OUT               ;load P1OUT (addy current state of LED) to R1
+    LDRB R0, [R1]               ;load current state of LED to R0
+    EOR R0, R0, #0x01            ;XOR to toggle
+    STRB R0, [R1]               ;store result
+    BX LR
         .endasmfunc
 
 
 ; function to continuously toggle P1.0 every half second
 ; use a loop as a timer
 LED_Oscillate:  .asmfunc
-; add your code here
 
-Begin   BL      LED_Toggle  ; togles
+
+Begin:  BL      LED_Toggle  ; toggles
         LDR     R0, DELAY   ; loads the delay constant in R0
-Loop1   CMP     R0, #0      ; compare if equals 0
+Loop1:  CMP     R0, #0      ; compare if equals 0
         BEQ     Begin       ; branch to begin, exit loop
-        SUB     R0, R0, #1  ; subtract 1 from delay constant in R0
+        SUBS    R0, R0, #1  ; subtract 1 from delay constant in R0
         B       Loop1       ; stay in loop
 
         .endasmfunc
