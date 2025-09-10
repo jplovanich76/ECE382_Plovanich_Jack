@@ -14,14 +14,14 @@
 ; The dots between addresses are for easy reading.
 ; Do not add dots in your code.
         .align 4
-P1SEL0  .word 0x40000C0A
-P1SEL1  .word 0x40000C0C
-P1DIR   .word 0x40000C04
-P1OUT   .word 0x40000C02
+P1SEL0  .word 0x40004C0A
+P1SEL1  .word 0x40004C0C
+P1DIR   .word 0x40004C04
+P1OUT   .word 0x40004C02
 
 ; Use this delay for Homework 8.
 ; You need to adjust this value in Lab8.
-DELAY   .word 1200000
+DELAY   .word 2000000
 
         ; global functions external function can access these functions.
         .global LED_Init
@@ -87,11 +87,11 @@ LED_Toggle: 	.asmfunc
 LED_Oscillate:  .asmfunc
 
 
-Begin:  BL      LED_Toggle  ; toggles
+Begin   BL      LED_Toggle  ; togles
         LDR     R0, DELAY   ; loads the delay constant in R0
-Loop1:  CMP     R0, #0      ; compare if equals 0
+Loop1   CMP     R0, #0      ; compare if equals 0
         BEQ     Begin       ; branch to begin, exit loop
-        SUBS    R0, R0, #1  ; subtract 1 from delay constant in R0
+        SUB     R0, R0, #1  ; subtract 1 from delay constant in R0
         B       Loop1       ; stay in loop
 
         .endasmfunc

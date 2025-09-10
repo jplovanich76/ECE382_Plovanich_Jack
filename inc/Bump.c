@@ -79,10 +79,20 @@ void Bump_Init(void){
 // bit 1 Bump2
 // bit 0 Bump1
 uint8_t Bump_Read(void) {
-    // write this as part of Lab 8
-    // 1)read the sensors (which are active low) and convert to active high
 
-    // 2. Select, shift, combine, and output
-    return 0; // replace this line
+    uint8_t sensor = ~P4->IN;
+    sensor &= 0xED;
+
+    uint8_t bump1 = (sensor & 0b00000001);                 //P0, bit 0 - no shift needed
+    uint8_t bump2 = (sensor & 0b00000100) >> 1;
+    uint8_t bump3 = (sensor & 0b00001000) >> 1;
+    uint8_t bump4 = (sensor & 0b00100000) >> 2;
+    uint8_t bump5 = (sensor & 0b01000000) >> 2;
+    uint8_t bump6 = (sensor & 0b10000000) >> 2;
+
+    uint8_t result = bump1 | bump2 | bump3 | bump4 | bump5 | bump6;
+
+    return result;
+
 }
 
