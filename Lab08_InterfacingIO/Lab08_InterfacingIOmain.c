@@ -151,17 +151,18 @@ void Program8_3(void) {
 
         // Read the alarm activation switch (right-most bump switch, BUMP1)
         // If activated (armed), isArmed is set to true, otherwise false
+        //when we & the input and constant, we KEEP the one bit we want that determines if bump1 is pressed (bit masking)
         if (bump & BUMP1) {
-            isArmed = true;
+            isArmed = true;                     //set true and false accordingly
         }
         else {
             isArmed = false;
         }
         // Read the window switches (BUMP5 and BUMP6)
         // windows is set based on the state of the two left bump switches
-        if ((bump & BUMP5) && (bump & BUMP6)) {
-            windows = 0;
-        }
+        if ((bump & BUMP5) && (bump & BUMP6)) {                 //BOTH must be pressed - compare bump and BUMP5/6 individually, and use && to see if they are both the same, hence, TRUE
+            windows = 0;                                        //we keep the one bit from each & operation we want, and compare logically with &&
+        }                                                       //set windows = 0 for both pressed, 1 for other cases
         else if (bump & BUMP5) {
             windows = 1;
         }
@@ -173,7 +174,7 @@ void Program8_3(void) {
         }
 
         // If the alarm is armed and the windows (BUMP5 and BUMP6) are not secure, toggle the LED
-        if (isArmed && windows) {
+        if (isArmed && windows) {               //LOGICAL AND
             LED_Toggle();
         }
         // Otherwise, turn the LED off

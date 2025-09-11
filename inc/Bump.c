@@ -84,7 +84,7 @@ uint8_t Bump_Read(void) {
     sensor &= 0xED;
 
     uint8_t bump1 = (sensor & 0b00000001);                 //P0, bit 0 - no shift needed
-    uint8_t bump2 = (sensor & 0b00000100) >> 1;
+    uint8_t bump2 = (sensor & 0b00000100) >> 1;            //& with the proper mask, preserving the bit I care about, then shift into positon as listed above
     uint8_t bump3 = (sensor & 0b00001000) >> 1;
     uint8_t bump4 = (sensor & 0b00100000) >> 2;
     uint8_t bump5 = (sensor & 0b01000000) >> 2;
