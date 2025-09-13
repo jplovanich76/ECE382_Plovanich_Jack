@@ -117,10 +117,6 @@ void Flash(void) {
 
 
 
-
-}
-
-
 // Code to test background and foreground threads.
 // Background: Pulse LEDs on and off.
 // Foreground: Display a counter on LCD
@@ -202,7 +198,7 @@ void Program10_3(void){
 
     // Contrast value 0xB1 looks good on red SparkFun
     // Adjust this from 0xA0 (lighter) to 0xCF (darker) if necessary.
-    uint8_t const contrast = 0xB1;
+    uint8_t const contrast = 0xA3;
     Nokia5110_SetContrast(contrast);
 
     Nokia5110_Clear();
@@ -216,8 +212,9 @@ void Program10_3(void){
 
     LaunchPad_RGB(MAGENTA);
     uint16_t count;
-
-    //EnableInterrupts();     // uncomment for background thread
+    int32_t sr = StartCritical();
+    EnableInterrupts();     // uncomment for background thread
+    EndCritical(sr);
 
     for (int i = 0; i < 1000; i++) {
         count = Increment();        // uncomment for foreground thread
@@ -240,7 +237,7 @@ void Program10_3(void){
 void main(void) {
 
     // Program10_1();
-    // Program10_2();
+    //Program10_2();
     Program10_3();
 
 }
