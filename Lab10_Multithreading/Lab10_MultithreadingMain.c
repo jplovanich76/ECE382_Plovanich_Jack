@@ -212,12 +212,11 @@ void Program10_3(void){
 
     LaunchPad_RGB(MAGENTA);
     uint16_t count;
-    int32_t sr = StartCritical();
     EnableInterrupts();     // uncomment for background thread
-    EndCritical(sr);
-
     for (int i = 0; i < 1000; i++) {
+        int32_t sr = StartCritical();
         count = Increment();        // uncomment for foreground thread
+        EndCritical(sr);
         Clock_Delay1us(1000);
     }
 
