@@ -129,7 +129,7 @@ void Program11_1(void) {
 
 // char Name[] = {'B', 'a', 'e', 'k', 0}; // Add NULL at the end.
 // it is the same as the following.
-char Name[] = "Baek";
+char Name[] = "Plo ";
 
 // =============== Program 11.2 =====================================
 // Transmit the first three letters of your last name
@@ -140,7 +140,7 @@ void Program11_2(void){
     Clock_Init48MHz();      // set system clock to 48 MHz
     LaunchPad_Init();
 
-    const uint32_t baudrate = 19200;
+    const uint32_t baudrate = 115200; //19200
     UART0_Init(baudrate);  // Initialize UART0
 
     LEDOUT = 1;
@@ -176,6 +176,6 @@ void Program11_3(void){
 
 void main(void){
     //Program11_1();
-    Program11_2();
-    //Program11_3();
+    //Program11_2();
+    Program11_3();
 }

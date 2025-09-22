@@ -72,9 +72,17 @@ policies, either expressed or implied, of the FreeBSD Project.
 void UART0_Init(uint32_t baudrate){
 
     // you write this as part of Lab 11
-    /*
+
     // hold the USCI module in reset mode
-    EUSCI_A0->CTLW0
+    EUSCI_A0->CTLW0 = 0x0001;
+    EUSCI_A0->CTLW0 = 0x00C1;
+    EUSCI_A0->BRW = 12000000 / baudrate;
+    EUSCI_A0->MCTLW = 0;
+    P1->SEL0 |= 0x0C;
+    P1->SEL1 &= ~0x0C;
+    EUSCI_A0->CTLW0 &= ~0x0001;
+    EUSCI_A0->IE &= ~0x000F;
+
 
     // Configure UART settings:
     // bit15=0,      no parity bits
@@ -90,27 +98,20 @@ void UART0_Init(uint32_t baudrate){
     // bit2=0,       data mode (not address mode)
     // bit1=0,       do not transmit break
     // bit0=1,       hold logic in reset state for configuration
-    EUSCI_A0->CTLW0
 
     // Set the baud rate
     // N = clock/baud rate, for 115,200 baud: N = 12,000,000 / 115,200 = 104.1667
     // UCBR = int(N) = 104
     // Note: 'baudrate' is a function argument passed into this initialization function. 
-    EUSCI_A0->BRW
 
     // Clear modulation control
-    EUSCI_A0->MCTLW = 0;
     
     // Configure P1.3 and P1.2 as primary UART function pins
-    P1->SEL0
-    P1->SEL1
 
     // enable the USCI module
-    EUSCI_A0->CTLW0
 
     // Disable UART interrupts (transmit ready, receive full, etc.)
-    EUSCI_A0->IE
-    */
+
 }
 
 //------------UART0_InChar------------
@@ -129,9 +130,8 @@ char UART0_InChar(void) {
 // Input: 8-bit ASCII character to be transmitted
 // Output: none
 void UART0_OutChar(char data){
-    // you write this as part of Lab 11
-
-
+        while((EUSCI_A0->IFG & 0x02) == 0);     //UCTXFIG - wait until its 1
+        EUSCI_A0->TXBUF = data;                 //write data after determining its empty
 }
 
 
@@ -142,7 +142,10 @@ void UART0_OutChar(char data){
 void UART0_OutString(const char* ptr){
     // you write this as part of Lab 11
     // You must use UART0_OutChar
-
+    while(*ptr != 0) {
+        UART0_OutChar(*ptr);
+        ptr++;
+}
 }
 
 //===============================================================
