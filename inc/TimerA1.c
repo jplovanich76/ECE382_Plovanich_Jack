@@ -118,9 +118,9 @@ void TimerA1_Stop(void){
 
 
     // halt Timer A1 - MC  = stop mode
-	TIMER_A1->CTL &= ~0x0030;
+	TIMER_A1->CTL &= ~0x0030;               //clears bits 4/5, friendly - stop mode
 	// disable interrupt 10 in NVIC
-	NVIC->ICER[0] = (1 << 10);
+	NVIC->ICER[0] = 0x00000400;             //same bit as used to toggle ISER
 
 
 }
@@ -130,7 +130,7 @@ void TA1_0_IRQHandler(void){
     // write this as part of Lab 13
 
     // acknowledge capture/compare interrupt 0 / CCIFG = no interrupt pending
-    TIMER_A1->CCTL[0] &= ~0x0001;
+    TIMER_A1->CCTL[0] &= ~0x0001;           //clears CCFIG flag
 
 	// execute user task
     (*TimerA1Task)();

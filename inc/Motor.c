@@ -75,10 +75,20 @@ void Motor_Init(void){
     // write this as part of Lab 13
 
     // configure P5.4 and P5.5 for PH
+    P5->SEL0 &= ~0x30;
+    P5->SEL1 &= ~0x30;
+    P5->DIR |= 0x30;
+    P5->OUT &= ~0x30;
 
     // configure P3.6 and P3.7 for SLEEP
+    P3->SEL0 &= ~0xC0;
+    P3->SEL1 &= ~0xC0;
+    P3->DIR |= 0xC0;
+    P3->OUT &= ~0xC0;
+
 
     // initialize PWM with 0% duty cycle
+    PWM_Init34(15000);
 
 }
 
@@ -92,19 +102,13 @@ void Motor_Init(void){
 void Motor_Coast(void){
     // write this as part of Lab 13
     // Note: setting nSleep = 0 and PWM (EN) = 0 makes the robot "coast"
+    TIMER_A0->CCR[4] = 0x0000;
 
     // Update left PWM to 0
+    TIMER_A0->CCR[3] = 0x0000;
 
     // Update right PWM to 0
-
-			   
-																		
-									
-
-									 
-					 
-									
-					
+    P3->OUT &= ~0xC0;
 
 }
 
@@ -117,10 +121,13 @@ void Motor_Coast(void){
 void Motor_Brake(void){
     // write this as part of Lab 13
     // Note: setting nSleep = 1 and PWM (EN) = 0 makes the robot "brake"
+    TIMER_A0->CCR[4] = 0x0000;
 
     // Update left PWM to stop motor
+    TIMER_A0->CCR[3] = 0x0000;
 
     // Update right PWM to stop motor
+    P3->OUT |= 0xC0;
 
 }
 
@@ -159,10 +166,14 @@ void Motor_Forward(uint16_t leftDuty_permil, uint16_t rightDuty_permil){
     // write this as part of Lab 13
 
     // set direction of motors
+    P5->OUT &= ~0x30;
 
     // update PWMs
+    PWM_DutyRight(rightDuty_permil);
+    PWM_DutyLeft(leftDuty_permil);
 
     // Activate motors
+    P3->OUT |= 0xC0;
 
     // FYI: The motors run until software issues another command (don't turn off)
 
@@ -180,11 +191,16 @@ void Motor_TurnRight(uint16_t leftDuty_permil, uint16_t rightDuty_permil){
 
     // write this as part of Lab 13
     // set direction of motors
+    P5->OUT &= ~0x10;
+    P5->OUT |= 0x20;
 
     // update PWMs
+    PWM_DutyRight(rightDuty_permil);
+    PWM_DutyLeft(leftDuty_permil);
 
     // Activate motors
     // FYI: The motors run until software issues another command (don't turn off)
+    P3->OUT |= 0xC0;
 
 }
 
@@ -200,10 +216,15 @@ void Motor_TurnLeft(uint16_t leftDuty_permil, uint16_t rightDuty_permil){
 
     // Write this as part of Lab 13
     // Set direction of motors
+    P5->OUT |= 0x10;
+    P5->OUT &= ~0x20;
 
     // update PWMs
+    PWM_DutyRight(rightDuty_permil);
+    PWM_DutyLeft(leftDuty_permil);
 
     // Activate motors
+    P3->OUT |= 0xC0;
 
     // The motors run until software issues another command (don't turn off)
 
@@ -222,10 +243,14 @@ void Motor_Backward(uint16_t leftDuty_permil, uint16_t rightDuty_permil){
 
     // write this as part of Lab 13
     // set direction of motors
+    P5->OUT |= 0x30;
 
     // update PWMs
+    PWM_DutyRight(rightDuty_permil);
+    PWM_DutyLeft(leftDuty_permil);
 
     // Activate motors
+    P3->OUT |= 0xC0;
 
     // The motors run until software issues another command (don't turn off)
 

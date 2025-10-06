@@ -204,9 +204,32 @@ void MotorController(void){
     uint16_t rightDuty_permil = 0; //0 %
 
 	// Write this for Lab 13
+    if (Timer_10ms == 0){
+        Motor_Forward(400, 400);
+    }
+    else if (200 == Timer_10ms) {           //2s
+        Motor_Coast();
+    }
+    else if (400 == Timer_10ms) {           //4s
+        Motor_Backward(400, 400);
+    }
+    else if (600 == Timer_10ms) {           //6s
+        Motor_TurnLeft(400, 400);
+    }
+    else if (800 == Timer_10ms) {           //8s
+        Motor_TurnRight(400, 400);
+    }
+    else {
 
+    }
 
+    Timer_10ms++;       //need to increment the timer so different ops actually get to run
+
+    if (Timer_10ms >= 1000){            //every 10s - 1000 * 10ms --> 10s cycle in total
+        Timer_10ms = 0;                 //reset
+    }
 }
+
 
 
 // Write this program that uses PWM to move the robot
@@ -236,8 +259,9 @@ void Program13_3(void) {
 	// Write this for Lab 13
 
     // Initialize Timer A1 to run MotorController at 100 Hz
+    const uint16_t period_2us = 5000;
 	// const uint16_t period_2us =      ; // T = 5,000 * 2us = 10ms --> 100 Hz
-	// TimerA1_Init(/*pass a function pointer here*/, period_2us);  // 100 Hz
+    TimerA1_Init(MotorController, period_2us);  // 100 Hz
 
     // Enable Interrupts
     EnableInterrupts();
@@ -260,7 +284,7 @@ void Program13_3(void) {
 
 }
 int main(void){
-	Program13_1();
-	//Program13_2();
-	//Program13_3();
+	//Program13_1();
+    //Program13_2();
+	Program13_3();
 }
