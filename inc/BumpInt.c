@@ -62,21 +62,32 @@ void BumpInt_Init(void(*task)(uint8_t)){
     // write this as part of Lab 14
 	BumpTask = task;
 	// 1. Configure P4.7-P4.5, P4.3, P4.2, and P4.0 as GPIO
+	P4->SEL0 &= ~0xED;         //0b11101101, clear
+	P4->SEL1 &= ~0xED;         //clear
+
 
 	// 2. Make P4.7-P4.5, P4.3, P4.2, and P4.0 input
+	P4->DIR &= ~0xED;          //clear
 
 	// 3. Enable pull-up resistors on P4.7-P4.5, P4.3, P4.2, and P4.0
+	P4->REN |= 0xED;           //set
+	P4->OUT |= 0xED;           //set
 
 	// 4. P4.7-P4.5, P4.3, P4.2, and P4.0 are falling edge event
 	//    Set to falling edge events PxIFG flag is set with a high-to-low transition
+	P4->IES  |= 0xED;
 
 	// 5. Clear all flags (IFG -> no interrupts pending)
+	P4->IFG &= ~0xED;
 
     // 6. Enable interrupt on P4.7-P4.5, P4.3, P4.2, and P4.0 (enable IE)
+	P4->IE |= 0xED;            //set
 
 	// 7. Setup the Nested Vector Interrupt Controller with priority 1
 	//    Ensure you choose the correct NVIC
     //    Enable IRQ 38 in NVIC
+	NVIC->IP[38] = (1 << 5);                        //enable IRQ 38, shift bits to align with only 7:5 being used
+    NVIC->ISER[1] = (1 << 6);                       //set bit 6 in ISR[1]
 
 }
 
@@ -90,21 +101,24 @@ void BumpInt_Init(void(*task)(uint8_t)){
 // bit 1 Bump2
 // bit 0 Bump1
 uint8_t BumpInt_Read(void){
-
     // 1. Read the sensors (which are active low) and convert to active high
+    uint8_t sensors = (~P4->IN);
 
     // 2. Select, shift, combine, and output
-    return 0; // replace this line
+    uint8_t sevenToFive = ((sensors & 0xE0) >> 2);
+    uint8_t twoToThree = ((sensors & 0x0C) >> 1);
+    uint8_t zero = (sensors & 0x01);
+    uint8_t out = (sevenToFive | twoToThree | zero);
+
+    return out;
 }
 
 
 // we do not care about critical section/race conditions
 // triggered on touch, falling edge
 void PORT4_IRQHandler(void){
-    // write this as part of Lab 14
-
-    // clear interrupt flags (No interrupt is pending)
-
-    // Call the user function with the value returned by BumpInt_Read()
+    // clear interrupt flag (No interrupt is pending))
+    P4->IFG &= ~0xED;
+    // Call Bump_Read()
     (*BumpTask)(BumpInt_Read());
 }
