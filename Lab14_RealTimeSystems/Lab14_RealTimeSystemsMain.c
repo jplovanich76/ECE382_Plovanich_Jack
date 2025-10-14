@@ -237,12 +237,13 @@ typedef struct command {
 // 4. Turn left slowly for 1.5 seconds  (30% duty cycle)
 #define NUM_STEPS   4    // update this line -> updated to 4
 const command_t Control[NUM_STEPS]={
-	{200, 200, &Motor_Backward, 2000},
-	{300, 300, &Motor_TurnRight, 1500},
-	{400, 400, &Motor_Forward, 1000},
-	{300, 300, &Motor_TurnLeft, 1500},
+	{200, 200, &Motor_Backward, 2000},       //20%, 20%, backward, 2s
+	{300, 300, &Motor_TurnRight, 1500},     //30%, 30%, right, 1.5s
+	{400, 400, &Motor_Forward, 1000},       //40%, 40%, forward, 1s
+	{300, 300, &Motor_TurnLeft, 1500},      //30%, 30%, left, 1.5s
 };
 
+//structure: {dutyLeft_permil, dutyRight_permil, MotorFunction, duration_ms}
 
 
 uint32_t ElapsedTime_ms;
@@ -256,8 +257,8 @@ uint32_t CurrentStep;   // 0, 1, 2..., NUM-1
 void Controller3(void) {
     // Write this as part of Lab 14
     // Controller should increment the timer (ElapsedTime_ms)
-    ElapsedTime_ms++;
-    if (ElapsedTime_ms > Control[0].duration_ms) {
+    ElapsedTime_ms++;       //increment
+    if (ElapsedTime_ms >= Control[CurrentStep].duration_ms) {           //comparing to currentStep
         CurrentStep = (CurrentStep + 1) % (NUM_STEPS);
         ElapsedTime_ms = 0;
         Control[CurrentStep].MotorFunction(Control[CurrentStep].dutyRight_permil, Control[CurrentStep].dutyLeft_permil);

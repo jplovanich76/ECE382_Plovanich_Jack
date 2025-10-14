@@ -110,7 +110,7 @@ uint8_t BumpInt_Read(void){
     uint8_t zero = (sensors & 0x01);
     uint8_t out = (sevenToFive | twoToThree | zero);
 
-    return out;
+    return out;     //shifts to push into a 6 bit format (5-0)
 }
 
 
