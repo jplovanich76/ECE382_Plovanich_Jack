@@ -49,12 +49,12 @@
 
 
 // Complete the following lines
-//#define SIDEMAX     // largest side distance to wall in mm
-//#define SIDEMIN     // smallest side distance to wall in mm
-//#define CENTEROPEN  // distance to wall between open/blocked
-//#define CENTERMIN   // min distance to wall in the front
-//#define IRMIN       // min possible reading of IR sensor
-//#define IRMAX       // max possible reading of IR sensor
+#define SIDEMIN    212   // smallest side distance to the wall in mm
+#define SIDEMAX    354   // largest side distance to wall in mm
+#define CENTERMIN  150   // min distance to the wall in the front
+#define CENTEROPEN 600   // distance to the wall between open/blocked
+#define IRMIN      50    // min possible reading of IR sensor
+#define IRMAX      800   // max possible reading of IR sensor
 
 
 /* Classify
@@ -75,9 +75,54 @@ scenario_t Classify(int32_t left_mm, int32_t center_mm, int32_t right_mm) {
 
     scenario_t result = ClassificationError;
 
-    // Add your your code here
+    if ((left_mm < IRMIN) || (left_mm > IRMAX) ||
+           (center_mm < IRMIN) || (center_mm > IRMAX) ||
+           (right_mm  < IRMIN) || (right_mm  > IRMAX)) {
+           return ClassificationError;
+       }
+       if (left_mm < SIDEMIN) {
+           result += LeftTooClose;
+       }
+       if (right_mm < SIDEMIN) {
+           result += RightTooClose;
+       }
+        if (center_mm < CENTERMIN) {
+           result += CenterTooClose;
+       }
+
+    if (result == ClassificationError) {
+        if (center_mm < CENTEROPEN) {           //blocked, right t, left t, tee j
+            if ((left_mm < SIDEMAX) && (right_mm < SIDEMAX)) {
+                return Blocked;
+            }
+            else if ((left_mm < SIDEMAX) && (right_mm >= SIDEMAX)) {
+                return RightTurn;
+            }
+            else if ((left_mm >= SIDEMAX) && (right_mm < SIDEMAX)) {
+                return LeftTurn;
+            }
+            else {
+                return TeeJoint;
+            }
+
+        }
+        if (center_mm >= CENTEROPEN) {          //straight, right j, left j, cross
+            if ((left_mm >= SIDEMAX) && (right_mm >= SIDEMAX)){
+                return CrossRoad;
+            }
+            else if ((left_mm < SIDEMAX) && (right_mm < SIDEMAX)) {
+                return Straight;
+            }
+            else if ((left_mm < SIDEMAX) && (right_mm >= SIDEMAX)) {
+                return RightJoint;
+            }
+            else {
+                return LeftJoint;
+            }
+        }
+        }
+       return result;
+   }
 
 
-    return result;
-}
 
