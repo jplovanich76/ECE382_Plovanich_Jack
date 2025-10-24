@@ -48,7 +48,7 @@
 #include "../inc/Classifier.h"
 
 
-// Complete the following lines
+// All given
 #define SIDEMIN    212   // smallest side distance to the wall in mm
 #define SIDEMAX    354   // largest side distance to wall in mm
 #define CENTERMIN  150   // min distance to the wall in the front
@@ -73,15 +73,15 @@
 */
 scenario_t Classify(int32_t left_mm, int32_t center_mm, int32_t right_mm) {
 
-    scenario_t result = ClassificationError;
+    scenario_t result = ClassificationError;        //default to error, initialize result
 
-    if ((left_mm < IRMIN) || (left_mm > IRMAX) ||
+    if ((left_mm < IRMIN) || (left_mm > IRMAX) ||               //check of IR sensor readings are invalid first, showing class error
            (center_mm < IRMIN) || (center_mm > IRMAX) ||
            (right_mm  < IRMIN) || (right_mm  > IRMAX)) {
            return ClassificationError;
        }
-       if (left_mm < SIDEMIN) {
-           result += LeftTooClose;
+       if (left_mm < SIDEMIN) {                                 //if less than the minimum, show too close for that sensor
+           result += LeftTooClose;                              //use += to stack, using if's and not else-if, else, also allows for results to stack rather than choosing 1
        }
        if (right_mm < SIDEMIN) {
            result += RightTooClose;
@@ -90,10 +90,10 @@ scenario_t Classify(int32_t left_mm, int32_t center_mm, int32_t right_mm) {
            result += CenterTooClose;
        }
 
-    if (result == ClassificationError) {
-        if (center_mm < CENTEROPEN) {           //blocked, right t, left t, tee j
+    if (result == ClassificationError) {                                    //if it made it through the too close checks, THEN check other situations - helps with order of precedence of if statements
+        if (center_mm < CENTEROPEN) {                                       //blocked, right t, left t, tee j
             if ((left_mm < SIDEMAX) && (right_mm < SIDEMAX)) {
-                return Blocked;
+                return Blocked;                                             //return early on all of these, as these DONT stack - can use else-if, else here as well because of that
             }
             else if ((left_mm < SIDEMAX) && (right_mm >= SIDEMAX)) {
                 return RightTurn;
@@ -106,7 +106,7 @@ scenario_t Classify(int32_t left_mm, int32_t center_mm, int32_t right_mm) {
             }
 
         }
-        if (center_mm >= CENTEROPEN) {          //straight, right j, left j, cross
+        if (center_mm >= CENTEROPEN) {                                      //straight, right j, left j, cross
             if ((left_mm >= SIDEMAX) && (right_mm >= SIDEMAX)){
                 return CrossRoad;
             }

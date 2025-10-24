@@ -103,7 +103,7 @@ void LCDOut1(void){
         // Nokia5110_SetCursor2(4,5); Nokia5110_OutUDec(NumSW2Pressed, 5);
 
     // At row 3 display the filtered left ADC data and the left distance
-    Nokia5110_SetCursor2(3,3); Nokia5110_OutUDec(ADC14->MEM[4], 5);
+    Nokia5110_SetCursor2(3,3); Nokia5110_OutUDec(ADC14->MEM[4], 5);             //grab these straight from memory, we want the raw value, not filtered
     Nokia5110_SetCursor2(3,8); Nokia5110_OutUDec(DistLeft_mm, 5);
 
     // At row 4 display the filtered center ADC data and the center distance
@@ -279,7 +279,7 @@ void LCDClear4(void){
 // R= 2274  800
 // RightJoint
 
-/* example syntax
+/* example syntax, basically the same
  *  Nokia5110_SetCursor2(3,3); Nokia5110_OutUDec(FilteredLeft, 5);
     Nokia5110_SetCursor2(3,8); Nokia5110_OutUDec(DistLeft_mm, 5);
 
@@ -309,7 +309,7 @@ void LCDOut4(void){
     Nokia5110_OutUDec(DistRight_mm,3);
 
     Nokia5110_SetCursor2(6,1);
-    Nokia5110_OutString(StrScenario[Classify(DistLeft_mm, DistCenter_mm, DistRight_mm)]);
+    Nokia5110_OutString(StrScenario[Classify(DistLeft_mm, DistCenter_mm, DistRight_mm)]);           //showing the situation, running throgh Classify()
 }
 
 // ADC sampling
