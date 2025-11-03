@@ -388,29 +388,29 @@ static void Controller(void){
     Tachometer_GetSpeeds(0, 0);
     // Update index in circular buffer.
 
-    // Step 1: Calculate average tachometer period over last ten values.
-    uint16_t leftPeriod = 0;
-    uint16_t rightPeriod = 0;
+    // Step 1: Calculate average tachometer period over last ten values.                use average function with period and 10 vals as parameters
+    uint16_t leftPeriod = average(LeftTachoPeriod, 10);
+    uint16_t rightPeriod = average(RightTachoPeriod, 10);
 
-    // Step 2: Calculate actual motor speed (RPM) using tachometer data.
-    LeftSpeed_rpm = 0;
-    RightSpeed_rpm = 0;
+    // Step 2: Calculate actual motor speed (RPM) using tachometer data.            RPM = 60/(1/P)
+    LeftSpeed_rpm = 60/(1/leftPeriod);
+    RightSpeed_rpm = 60/(1/rightPeriod);
 
     // Step 3: Calculate speed errors by comparing to desired speed.
-    ErrorL = 0;
-    ErrorR = 0;
+    ErrorL = DesiredSpeed_rpm - LeftSpeed_rpm;
+    ErrorR = DesiredSpeed_rpm - RightSpeed_rpm;
 
-    // Step 4: Accumulate errors for integral control.
-    AccumSpeedErrorL = 0;
-    AccumSpeedErrorR = 0;
+    // Step 4: Accumulate errors for integral control.                              basically an integral, add instantaneous error repeatedely
+    AccumSpeedErrorL = AccumSpeedErrorL + ErrorL;
+    AccumSpeedErrorR = AccumSpeedErrorR + ErrorR;
 
-    // Step 5: Calculate control outputs (duty cycles) using PI control formula.
-    LeftDuty_permil = 0;
-    RightDuty_permil = 0;
+    // Step 5: Calculate control outputs (duty cycles) using PI control formula.        (Kp*error) + (Ki*accumulated_error)
+    LeftDuty_permil = (Kp*ErrorL) + (Ki*AccumSpeedErrorL);
+    RightDuty_permil = (Kp*ErrorR) + (Ki*AccumSpeedErrorR);
 
-    // Step 6: Ensure duty cycles are within predefined bounds, MINMAX.
-    LeftDuty_permil = 0;
-    RightDuty_permil = 0;
+    // Step 6: Ensure duty cycles are within predefined bounds, MINMAX.                 if duty cycles read below the min or above the max, set a floor/cap using MINMAX
+    LeftDuty_permil  = MINMAX(PWMMIN, PWMMAX, LeftDuty_permil);
+    RightDuty_permil = MINMAX(PWMMIN, PWMMAX, RightDuty_permil);
 
 	
     // ====================================================================
