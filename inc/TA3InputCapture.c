@@ -99,10 +99,10 @@ void TimerA3Capture_Init(void(*task0)(uint16_t time), void(*task1)(uint16_t time
 	NVIC->IP[15] = 2 << 5;   // Priority 2 for TA3CCR1 (P10.5)
 
 	// Enable interrupts for Timer A3 in NVIC
-	NVIC->ISER[0] = 0x000C000; // Enable interrupt 14 and 15
+	NVIC->ISER[0] = 0x0000C000; // Enable interrupt 14 and 15
 
     // Set Timer A3 to continuous mode and reset the timer
-	TIMER_A3->CTL |= 0x224;
+	TIMER_A3->CTL |= 0x0024;
 }
 
 
@@ -132,7 +132,7 @@ void TA3_N_IRQHandler(void){
     // write this as part of lab 16
 
     // Acknowledge the interrupt and clear the flag
-	TIMER_A3->CCTL[1] &= 0x0001;
+	TIMER_A3->CCTL[1] &= ~0x0001;
 								 
     // Call the user function with the timer value
 	(*CaptureTask1)(TIMER_A3->CCR[1]);

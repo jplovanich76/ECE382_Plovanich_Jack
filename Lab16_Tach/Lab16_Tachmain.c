@@ -114,13 +114,20 @@ void LCDClear1(void){
 void LCDSpeed1(void){
 
     // Write this as part of Lab 16
+    Nokia5110_SetCursor2(3, 2);          //show period
+    Nokia5110_OutUDec(LeftPeriod, 5);
+    Nokia5110_SetCursor2(3, 8);
+    Nokia5110_OutUDec(RightPeriod, 5);
 
+    Nokia5110_SetCursor2(4, 2);           //show speed
+    Nokia5110_OutUDec(LeftSpeed_rpm, 5);
+    Nokia5110_SetCursor2(4, 8);
+    Nokia5110_OutUDec(RightSpeed_rpm, 5);
 
-
-
-
-
-
+    Nokia5110_SetCursor2(5, 2);          //show distance
+    Nokia5110_OutUDec(LeftDistance_mm, 5);
+    Nokia5110_SetCursor2(5, 8);
+    Nokia5110_OutUDec(RightDistance_mm, 5);
 
 }
 
@@ -580,12 +587,18 @@ void Program16_2(void){
 // Develop a finite state machine (FSM) to control the robot's movement.
 // The robot moves forward, backward, and makes left or right turns based on bump sensor feedback.
 
+
+//I took out right turn/left turn and made each degree turn a different state for simplicity
 typedef enum {
     Stop = 0,      // Stop state
     Forward,       // Move forward
     Backward,      // Move backward
-    LeftTurn,      // Turn left
-    RightTurn      // Turn right
+    Left30,        //30 deg left
+    Right30,       //30 deg right
+    Left60,        //60 deg left
+    Right60,       //60 deg right
+    Left90,        //90 deg left
+    Right90,       //90 deg right
 } state_t;
 
 static state_t CurrentState = Forward;  // Initial state: Forward
@@ -601,23 +614,27 @@ typedef struct command {
 } command_t;
 
 // Control parameters for various states (distances and duty cycles)
-#define FRWD_DIST       0   // Replace this line for forward distance
-#define BKWD_DIST       0   // Replace this line for backward distance
-#define TR90_DIST       0   // Replace this line for 90 degree turn
-#define TR60_DIST       0   // Replace this line for 60 degree turn
-#define TR30_DIST       0   // Replace this line for 30 degree turn
+#define FRWD_DIST       700   // Replace this line for forward distance
+#define BKWD_DIST       90   // Replace this line for backward distance
+#define TR90_DIST       90   // Replace this line for 90 degree turn
+#define TR60_DIST       60   // Replace this line for 60 degree turn
+#define TR30_DIST       30   // Replace this line for 30 degree turn
 
-#define NUM_STATES      5     // Number of robot states
-#define LEN_STR_STATE   5     // String length for state names
-static char strState[NUM_STATES][LEN_STR_STATE] = {"STOP", "FRWD", "BKWD", "LFTR", "RGTR"};  // State names
+#define NUM_STATES      9     // Number of robot states
+#define LEN_STR_STATE   7     // String length for state names -- ??
+static char strState[NUM_STATES][LEN_STR_STATE] = {"STOP", "FRWD", "BKWD", "LT30", "RT30", "LT60", "RT60", "LT90", "RT90"};  // State names
 
 // Control commands for each state
 command_t ControlCommands[NUM_STATES] = {
     {0,   0,   &Motor_Stop,        0},          // Stop indefinitely
     {200, 200, &Motor_Forward,     FRWD_DIST},  // Move forward until bump sensor triggered
     {150, 150, &Motor_Backward,    BKWD_DIST},  // Move backward for 90mm
-    {150, 150, &Motor_TurnLeft,    0},          // Turn left
-    {150, 150, &Motor_TurnRight,   0}           // Turn right
+    {150, 150, &Motor_TurnLeft,    TR30_DIST},          // Turn left, 30
+    {150, 150, &Motor_TurnRight,   TR30_DIST},           // Turn right, 30
+    {150, 150, &Motor_TurnLeft,    TR60_DIST},          // Turn left, 60
+    {150, 150, &Motor_TurnRight,   TR60_DIST},           // Turn right, 60
+    {150, 150, &Motor_TurnLeft,    TR90_DIST},          // Turn left, 90
+    {150, 150, &Motor_TurnRight,   TR90_DIST},          // Turn right, 90
 };
 
 // Clear the LCD and display initial state
@@ -630,7 +647,14 @@ static void LCDClear3(void) {
 
 // Update the LCD with the current state and motor data
 static void LCDOut3(void) {
-    // Write your code here
+    Nokia5110_SetCursor2(3,4);
+    Nokia5110_OutString(strState[CurrentState]);
+
+    Nokia5110_SetCursor2(5,2);
+    Nokia5110_OutSDec(LeftDistance_mm, 5);
+
+    Nokia5110_SetCursor2(5,8);
+    Nokia5110_OutSDec(RightDistance_mm, 5);
 
 }
 
@@ -650,7 +674,7 @@ static void Controller3(void) {
     uint16_t right_permil = ControlCommands[CurrentState].right_permil;
 
     // FSM Output: Execute the motor command for the current state
-    // Write your code here
+    ControlCommands[CurrentState].MotorFunction(left_permil, right_permil);
 
     // State transition logic based on bump sensors and distance
     bumpRead = Bump_Read();  // Read bump sensor status
@@ -659,27 +683,58 @@ static void Controller3(void) {
     switch (CurrentState) {
 
         case Stop:  // Remain in Stop state indefinitely
-                break;
+            break;
 
         case Forward:  // Moving forward
 
             // Write your code here
-
+            if (LeftDistance_mm >= ControlCommands[CurrentState].dist_mm) {
+                NextState = Stop;
+            }
+            /*else if ((LeftDistance_mm  > FRWD_DIST) {                 //tried to set max distance of forward here, but it already did it itself
+                NextState = Stop;
+            }
+            else if ((RightDistance_mm  > FRWD_DIST) {
+                NextState = Stop;
+            }*/
+            else if (bumpRead & 0x01){                      //series of if/else-if statements, compare bumpRead and the given bumper, set state from there
+                NextState = Left30;
+            }
+            else if (bumpRead & 0x02){
+                NextState = Left60;
+            }
+            else if (bumpRead & 0x20){
+                NextState = Right30;
+            }
+            else if (bumpRead & 0x10){
+                NextState = Right60;
+            }
+            else if (bumpRead & 0x04){
+                NextState = Backward;
+            }
+            else if (bumpRead & 0x08){
+                NextState = Backward;
+            }
             break;
 
         case Backward:  // Moving backward
-
-            // Write your code here
-
-            break;
-
-        case LeftTurn:  // Turning left
-
-            // Write your code here
+            if (LeftDistance_mm <= -(ControlCommands[CurrentState].dist_mm)) {          //basically functions as abs to properly compare values
+                NextState = Left90;
+            }
 
             break;
 
-        case RightTurn:  // Turning right
+        case Left30:                //syntax for addressing multiple cases - apparently cannot do case Left30 | Left60 | Left 90
+        case Left60:
+        case Left90:  // Turning left, made each turn a different state for simplicity
+            if (RightDistance_mm >= ControlCommands[CurrentState].dist_mm) {
+                NextState = Forward;
+            }
+            break;
+
+        case Right30:
+        case Right60:
+        case Right90:  // Turning right, same concept here
             if (LeftDistance_mm >= ControlCommands[CurrentState].dist_mm) {  // Finished right turn
                 NextState = Forward;  // Move forward again
             }
