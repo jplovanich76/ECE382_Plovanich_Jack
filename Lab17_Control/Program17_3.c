@@ -93,7 +93,9 @@ policies, either expressed or implied, of the FreeBSD Project.
 // static int16_t Kp = 0;               // Stable Kp value of 100 (1.0 due to GAIN_DIVIDER)
 
 // solution
-static int16_t Kp = 0;
+static int16_t Kp = 5; //slow
+static int16_t Kp = 5; //fast, minimum overshoot
+static int16_t Kp = 5; //fast, hella overshoot
 
 
 // =============== IMPORTANT NOTE =====================================
@@ -376,18 +378,18 @@ static void Controller(void){
     // ====================================================================
 
     // Implement a proportional controller to maintain distance from both walls
+    // correction = error * Kp
 
-
-    // Calculate error as the difference between Left and Right wall distances
-    Error = 0;
+    // Calculate error as the difference, R - L
+    Error = Right - Left;
+    int32_t FixThatJawn = Kp * Error;
 
     // Calculate the left and right motor duty cycles based on proportional control
-    int16_t leftDuty_permil = 0;   // Adjust left motor speed based on error
-    int16_t rightDuty_permil = 0;  // Adjust right motor speed based on error
-
+    int16_t leftDuty_permil = PWM_AVERAGE + (FixThatJawn / GAIN_DIVIDER);
+    int16_t rightDuty_permil = PWM_AVERAGE - (FixThatJawn / GAIN_DIVIDER);
     // Ensure the calculated PWM duty cycles are within the motor's operational range
-    leftDuty_permil = 0;
-    rightDuty_permil = 0;
+    leftDuty_permil = MINMAX(PWMMIN, PWMMAX, leftDuty_permil);
+    rightDuty_permil = MINMAX(PWMMIN, PWMMAX, rightDuty_permil);
 
 
     // ====================================================================
