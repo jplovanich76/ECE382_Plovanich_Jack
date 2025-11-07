@@ -93,9 +93,9 @@ policies, either expressed or implied, of the FreeBSD Project.
 // static int16_t Kp = 0;               // Stable Kp value of 100 (1.0 due to GAIN_DIVIDER)
 
 // solution
-static int16_t Kp = 5; //slow
-static int16_t Kp = 5; //fast, minimum overshoot
-static int16_t Kp = 5; //fast, hella overshoot
+static int16_t Kp = 1;  //slow
+static int16_t Kp = 10; //fast, pretty good
+static int16_t Kp = 999; //fast, hella overshoot
 
 
 // =============== IMPORTANT NOTE =====================================
@@ -378,18 +378,17 @@ static void Controller(void){
     // ====================================================================
 
     // Implement a proportional controller to maintain distance from both walls
-    // correction = error * Kp
 
     // Calculate error as the difference, R - L
-    Error = Right - Left;
-    int32_t FixThatJawn = Kp * Error;
+    Error = Right - Left;                       //define error here since it affects correction and implementation to fix speeds
+    int32_t FixThatJawn = Kp * Error;           //correction = error * Kp
 
     // Calculate the left and right motor duty cycles based on proportional control
-    int16_t leftDuty_permil = PWM_AVERAGE + (FixThatJawn / GAIN_DIVIDER);
+    int16_t leftDuty_permil = PWM_AVERAGE + (FixThatJawn / GAIN_DIVIDER);           //sign of error takes care of needing to have if/else statements
     int16_t rightDuty_permil = PWM_AVERAGE - (FixThatJawn / GAIN_DIVIDER);
     // Ensure the calculated PWM duty cycles are within the motor's operational range
-    leftDuty_permil = MINMAX(PWMMIN, PWMMAX, leftDuty_permil);
-    rightDuty_permil = MINMAX(PWMMIN, PWMMAX, rightDuty_permil);
+    leftDuty_permil = MINMAX(PWMIN, PWMAX, leftDuty_permil);
+    rightDuty_permil = MINMAX(PMMIN, PWMAX, rightDuty_permil);
 
 
     // ====================================================================
