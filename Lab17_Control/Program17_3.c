@@ -93,9 +93,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 // static int16_t Kp = 0;               // Stable Kp value of 100 (1.0 due to GAIN_DIVIDER)
 
 // solution
-static int16_t Kp = 1;  //slow
-static int16_t Kp = 10; //fast, pretty good
-static int16_t Kp = 999; //fast, hella overshoot
+static int16_t Kp = 30; //best one
 
 
 // =============== IMPORTANT NOTE =====================================
@@ -388,7 +386,7 @@ static void Controller(void){
     int16_t rightDuty_permil = PWM_AVERAGE - (FixThatJawn / GAIN_DIVIDER);
     // Ensure the calculated PWM duty cycles are within the motor's operational range
     leftDuty_permil = MINMAX(PWMIN, PWMAX, leftDuty_permil);
-    rightDuty_permil = MINMAX(PMMIN, PWMAX, rightDuty_permil);
+    rightDuty_permil = MINMAX(PWMIN, PWMAX, rightDuty_permil);
 
 
     // ====================================================================
