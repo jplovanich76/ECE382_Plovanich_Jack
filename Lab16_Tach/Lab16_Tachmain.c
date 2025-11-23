@@ -1,4 +1,3 @@
-// Lab16_Tachmain.c
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -162,15 +161,15 @@ typedef struct command {
 // Control parameters for various states (distances and duty cycles)
 #define FRWD_DIST       1000000000   // forward distance
 #define BKWD_DIST       90   // backward distance
-#define TR90_DIST       90   // 90 degree turn
+#define TR90_DIST       93   // 90 degree turn
 #define NUM_STATES      4
 
 // Control commands for each state
 command_t ControlCommands[NUM_STATES] = {
     {0,   0,   &Motor_Stop,        0},          // Stop indefinitely
-    {377, 375, &Motor_Forward,     FRWD_DIST},  // Move forward until bump sensor triggered
-    {153, 150, &Motor_Backward,    BKWD_DIST},  // Move backward for 90mm
-    {153, 150, &Motor_TurnLeft,    TR90_DIST},          // Turn left, 90
+    {380, 375, &Motor_Forward,     FRWD_DIST},  // Move forward until bump sensor triggered
+    {150, 150, &Motor_Backward,    BKWD_DIST},  // Move backward for 90mm
+    {150, 150, &Motor_TurnLeft,    TR90_DIST},          // Turn left, 90
 };
 
 // Clear the LCD and display initial state
@@ -212,12 +211,35 @@ static void Coordinates(uint16_t heading, uint32_t distance) {
 }
 
 //toggles LEDs
-uint32_t const period_2us = 50000;
-static void Blink(void) {
-    REDLED ^= 0x01;
-    BLUELED ^= 0x01;
-}
 
+// This function is called every 1ms by TimerA2.
+void Blink(void) {
+
+    if (ControlCommands[CurrentState].left_permil == 0) {
+        static uint16_t Time_1ms = 0;
+
+        Time_1ms++;
+
+        if (Time_1ms < 5) {
+            LaunchPad_RGB(RED);
+        }
+        else if (Time_1ms <= 9) {
+            LaunchPad_RGB(BLUE);
+        }
+
+        // if it increments to 10, roll over to 0.
+        else if (Time_1ms >= 10) {
+            Time_1ms = 0;
+        }
+
+        else {
+
+        }
+    }
+    else {
+        LaunchPad_RGB(RED);
+    }
+}
 
 // Counter for how many times the controller function has been called
 static uint8_t NumControllerExecuted = 0;  // Updated every 20ms
@@ -258,24 +280,11 @@ static void Controller3(void) {
     switch (CurrentState) {
 
         case Stop:  // Remain in Stop state indefinitely, LED blink - TimerA1
-            TimerA1_Init(&Blink, period_2us);
             break;
 
         case Forward:  // Moving forward
             if (LeftDistance_mm >= ControlCommands[CurrentState].dist_mm) {
-                NextState = Stop;                           //at stop state, start blinking
-            }
-            else if (bumpRead & 0x01){                      //ONLY left 90deg and backward states - simplification, should theoretically navigate any maze
-                NextState = Left90;
-            }
-            else if (bumpRead & 0x02){
-                NextState = Left90;
-            }
-            else if (bumpRead & 0x20){
-                NextState = Left90;
-            }
-            else if (bumpRead & 0x10){
-                NextState = Left90;
+                NextState = Stop;
             }
             else if (bumpRead & 0x04){
                 NextState = Backward;
@@ -293,6 +302,7 @@ static void Controller3(void) {
             break;
 
         case Left90:                //syntax for addressing multiple cases - apparently cannot do case Left30 | Left60 | Left 90
+
             if (RightDistance_mm >= ControlCommands[CurrentState].dist_mm) {
                 numLTurns += 1;
                 head = numLTurns % 4;
@@ -303,7 +313,9 @@ static void Controller3(void) {
 
         default:
             break;
+
     }
+
 
     Coordinates(head, dT); //coordinates, heading
 
@@ -330,7 +342,7 @@ static void Controller3(void) {
 }
 
 // ========== Main Program: Finite State Machine Control ==========
-void Program16_3(void) {
+void Program1(void) {
 
     // ========== Initialization Phase ==========
     DisableInterrupts();    // Disable interrupts during initialization
@@ -340,6 +352,8 @@ void Program16_3(void) {
     Motor_Init();           // Initialize motor driver
     Nokia5110_Init();       // Initialize Nokia 5110 LCD display
     Tachometer_Init();      // Initialize tachometers for wheel distance measurement
+    uint32_t const period_2us = 50000;      //2 * 50000 = 100000
+    TimerA1_Init(&Blink, period_2us);
 
     // Set LCD contrast
     uint8_t const contrast = 0xA8;
@@ -373,5 +387,5 @@ void Program16_3(void) {
 
 
 void main(void){
-    Program16_3();
+    Program1();
 }

@@ -1,5 +1,6 @@
-// Level1.c
+//Level1.c
 
+#include <stdint.h>
 #include <stdbool.h>
 #include "msp.h"
 #include "../inc/Clock.h"
@@ -12,44 +13,20 @@
 #include "../inc/TA3InputCapture.h"
 #include "../inc/Bump.h"
 #include "../inc/UART0.h"
+#include "../inc/TimerA1.h"
 
 #define N 0
 #define W 1
 #define S 2
 #define E 3
 
-// Macro to constrain a value within a given range [MIN, MAX]
-// If X < MIN, X is set to MIN.
-// If X > MAX, X is set to MAX.
-// Example:
-// x = MINMAX(0, 100, x);  // x will be between 0 and 100.
-#define MINMAX(Min, Max, X) ((X) < (Min) ? (Min) : ( (X) > (Max)? (Max) : (X) ) )
-
-// variables to average tachometer readings
-#define TACHBUFF_SIZE 10
-uint16_t LeftTachoPeriod[TACHBUFF_SIZE];
-uint16_t RightTachoPeriod[TACHBUFF_SIZE];
-
-bool IsCollectionDone = false;
-
 // =============== Program 16.1 =====================================
-// 1. Test functions in TA3InputCapture.c and Tachometer.c.
-// 2. Measure and display timer periods, motor speeds, and duty cycles.
 
-uint16_t LeftPeriod;        // Timer period for the left motor
-uint16_t RightPeriod;       // Timer period for the right motor
 int16_t  LeftDistance_mm;   // Distance traveled by the left motor (in mm)
 int16_t  RightDistance_mm;  // Distance traveled by the right motor (in mm)
-uint16_t LeftSpeed_rpm;     // Speed of the left motor (in RPM)
-uint16_t RightSpeed_rpm;    // Speed of the right motor (in RPM)
 
 #define BUFFER_SIZE 1000    // Size of data buffers for storing measurements
 
-uint16_t SpeedBufferL[BUFFER_SIZE];     // Buffer to store left motor speed data
-uint16_t SpeedBufferR[BUFFER_SIZE];     // Buffer to store right motor speed data
-uint16_t DistanceBufferL[BUFFER_SIZE];  // Buffer to store left motor distance data
-uint16_t DistanceBufferR[BUFFER_SIZE];  // Buffer to store right motor distance data
-uint16_t DutyBuffer[BUFFER_SIZE];       // Buffer to store duty cycle values
 uint16_t CoordBufferX[BUFFER_SIZE];
 uint16_t CoordBufferY[BUFFER_SIZE];
 
@@ -114,11 +91,8 @@ static void TxBuffer(void) {
             // Transmit data stored in Speed, Distance, and Duty buffers
             for (int i = 0; i < BUFFER_SIZE; i++) {
                 UART0_OutUDec(i); UART0_OutChar(','); // Send index
-                UART0_OutSDec(SpeedBufferL[i]); UART0_OutChar(','); // Send left wheel speed
-                UART0_OutSDec(SpeedBufferR[i]); UART0_OutChar(','); // Send right wheel speed
-                UART0_OutSDec(DistanceBufferL[i]); UART0_OutChar(','); // Send left wheel distance
-                UART0_OutSDec(DistanceBufferR[i]); UART0_OutChar(','); // Send right wheel distance
-                UART0_OutSDec(DutyBuffer[i]); UART0_OutString("\n\r"); // Send motor duty cycle
+                UART0_OutSDec(CoordBufferX[i]); UART0_OutChar(',');
+                UART0_OutSDec(CoordBufferY[i]); UART0_OutChar(',');
             }
 
             // Notify the user that transmission is complete
@@ -170,12 +144,7 @@ typedef enum {
     Stop = 0,      // Stop state
     Forward,       // Move forward
     Backward,      // Move backward
-    Left30,        //30 deg left
-    Right30,       //30 deg right
-    Left60,        //60 deg left
-    Right60,       //60 deg right
     Left90,        //90 deg left
-    Right90,       //90 deg right
 } state_t;
 
 static state_t CurrentState = Forward;  // Initial state: Forward
@@ -191,33 +160,23 @@ typedef struct command {
 } command_t;
 
 // Control parameters for various states (distances and duty cycles)
-#define FRWD_DIST       1000000000   // Replace this line for forward distance
-#define BKWD_DIST       90   // Replace this line for backward distance
-#define TR90_DIST       90   // Replace this line for 90 degree turn
-#define TR60_DIST       60   // Replace this line for 60 degree turn
-#define TR30_DIST       30   // Replace this line for 30 degree turn
-
-#define NUM_STATES      9     // Number of robot states
-#define LEN_STR_STATE   7     // String length for state names -- ??
-static char strState[NUM_STATES][LEN_STR_STATE] = {"STOP", "FRWD", "BKWD", "LT30", "RT30", "LT60", "RT60", "LT90", "RT90"};  // State names
+#define FRWD_DIST       1000000000   // forward distance
+#define BKWD_DIST       90   // backward distance
+#define TR90_DIST       93   // 90 degree turn
+#define NUM_STATES      4
 
 // Control commands for each state
 command_t ControlCommands[NUM_STATES] = {
     {0,   0,   &Motor_Stop,        0},          // Stop indefinitely
-    {200, 200, &Motor_Forward,     FRWD_DIST},  // Move forward until bump sensor triggered
+    {380, 375, &Motor_Forward,     FRWD_DIST},  // Move forward until bump sensor triggered
     {150, 150, &Motor_Backward,    BKWD_DIST},  // Move backward for 90mm
-    {150, 150, &Motor_TurnLeft,    TR30_DIST},          // Turn left, 30
-    {150, 150, &Motor_TurnRight,   TR30_DIST},           // Turn right, 30
-    {150, 150, &Motor_TurnLeft,    TR60_DIST},          // Turn left, 60
-    {150, 150, &Motor_TurnRight,   TR60_DIST},           // Turn right, 60
     {150, 150, &Motor_TurnLeft,    TR90_DIST},          // Turn left, 90
-    {150, 150, &Motor_TurnRight,   TR90_DIST},          // Turn right, 90
 };
 
 // Clear the LCD and display initial state
 static void LCDClear3(void) {
     Nokia5110_Clear();                  // Clear the entire display
-    Nokia5110_OutString("SECTION 8 BOT"); // Bot name
+    Nokia5110_OutString("SECT. 8 BOT"); // Bot name
     Nokia5110_SetCursor2(3,1); Nokia5110_OutString("X");  // Show current state
     Nokia5110_SetCursor2(4,1); Nokia5110_OutString("Y");   // Show distance traveled
     Nokia5110_SetCursor2(5,1); Nokia5110_OutString("D");
@@ -226,17 +185,15 @@ static void LCDClear3(void) {
 // Update the LCD with the current state and motor data
 static void LCDOut3(void) {
     Nokia5110_SetCursor2(3, 3);         //display x-coordinate
-    Nokia5110_OutSDec(x, 3);
+    Nokia5110_OutSDec(x, 5);
 
     Nokia5110_SetCursor2(4, 3);         //display y-coordinate
-    Nokia5110_OutSDec(y, 3);
+    Nokia5110_OutSDec(y, 5);
 
-    Nokia5110_SetCursor2(5, 3);         //display orientation
-    Nokia5110_OutSDec(head, 3);
-
+    Nokia5110_SetCursor2(5, 3);         //display orientation (number corresponds to direction, as defined)
+    Nokia5110_OutSDec(head, 1);
 
 }
-
 
 //based on heading, update coordinates
 static void Coordinates(uint16_t heading, uint32_t distance) {
@@ -251,6 +208,37 @@ static void Coordinates(uint16_t heading, uint32_t distance) {
     }
     else {
         x = x - distance;
+    }
+}
+
+//toggles LEDs
+
+// This function is called every 1ms by TimerA2.
+void Blink(void) {
+
+    if (ControlCommands[CurrentState].left_permil == 0) {
+        static uint16_t Time_1ms = 0;
+
+        Time_1ms++;
+
+        if (Time_1ms < 5) {
+            LaunchPad_RGB(RED);
+        }
+        else if (Time_1ms <= 9) {
+            LaunchPad_RGB(BLUE);
+        }
+
+        // if it increments to 10, roll over to 0.
+        else if (Time_1ms >= 10) {
+            Time_1ms = 0;
+        }
+
+        else {
+
+        }
+    }
+    else {
+        LaunchPad_RGB(RED);
     }
 }
 
@@ -290,36 +278,14 @@ static void Controller3(void) {
     oldAhLeft = LeftDistance_mm;
     oldAhRight = RightDistance_mm;
 
-    ErrorX = homeX - x;
-    ErrorY = homeY - y;
-
-
     switch (CurrentState) {
 
-        case Stop:  // Remain in Stop state indefinitely
+        case Stop:  // Remain in Stop state indefinitely, LED blink - TimerA1
             break;
 
         case Forward:  // Moving forward
-
-            if ((ErrorX <= 5) && (ErrorX >= -5) && (ErrorY <= 5) && (ErrorY >= -5)) {
-                NextState = Stop;
-                CurrentState = Stop;
-            }
-
             if (LeftDistance_mm >= ControlCommands[CurrentState].dist_mm) {
-                NextState = Stop;                           //at stop state, start blinking
-            }
-            else if (bumpRead & 0x01){                      //series of if/else-if statements, compare bumpRead and the given bumper, set state from there
-                NextState = Left30;
-            }
-            else if (bumpRead & 0x02){
-                NextState = Left60;
-            }
-            else if (bumpRead & 0x20){
-                NextState = Right30;
-            }
-            else if (bumpRead & 0x10){
-                NextState = Right60;
+                NextState = Stop;
             }
             else if (bumpRead & 0x04){
                 NextState = Backward;
@@ -334,44 +300,31 @@ static void Controller3(void) {
                 NextState = Left90;
             }
 
-            if ((ErrorX <= 5) && (ErrorX >= -5) && (ErrorY <= 5) && (ErrorY >= -5)) {
-                NextState = Stop;
-                CurrentState = Stop;
-            }
-
             break;
 
-        case Left30:                //syntax for addressing multiple cases - apparently cannot do case Left30 | Left60 | Left 90
-        case Left60:
-        case Left90:  // Turning left, made each turn a different state for simplicity
+        case Left90:                //syntax for addressing multiple cases - apparently cannot do case Left30 | Left60 | Left 90
+
             if (RightDistance_mm >= ControlCommands[CurrentState].dist_mm) {
                 numLTurns += 1;
                 head = numLTurns % 4;
                 NextState = Forward;
             }
 
-            if ((ErrorX <= 180) && (ErrorX >= -180) && (ErrorY <= 180) && (ErrorY >= -180)) {
-                NextState = Stop;
-                CurrentState = Stop;
-            }
-
-            break;
-
-        case Right30:
-        case Right60:
-        case Right90:  // Turning right, same concept here
-            if (LeftDistance_mm >= ControlCommands[CurrentState].dist_mm) {  // Finished right turn
-                NextState = Forward;  // Move forward again
-            }
             break;
 
         default:
             break;
+
     }
 
-    Coordinates(head, dT);              //coordinates, home check
-    if ((ErrorX <= 5) && (ErrorX >= -5) && (ErrorY <= 5) && (ErrorY >= -5)) {
-        NextState = Stop;
+
+    Coordinates(head, dT); //coordinates, heading
+
+    ErrorX = homeX - x;
+    ErrorY = homeY - y;
+
+    if ((ErrorX <= 150) && (ErrorX >= -150) && (ErrorY <= 150) && (ErrorY >= -150)) {  //home check
+        NextState = Stop;   //if home, stop - one of these works
         CurrentState = Stop;
     }
 
@@ -390,7 +343,7 @@ static void Controller3(void) {
 }
 
 // ========== Main Program: Finite State Machine Control ==========
-void Program16_3(void) {
+void Program1(void) {
 
     // ========== Initialization Phase ==========
     DisableInterrupts();    // Disable interrupts during initialization
@@ -400,6 +353,8 @@ void Program16_3(void) {
     Motor_Init();           // Initialize motor driver
     Nokia5110_Init();       // Initialize Nokia 5110 LCD display
     Tachometer_Init();      // Initialize tachometers for wheel distance measurement
+    uint32_t const period_2us = 50000;      //2 * 50000 = 100000
+    TimerA1_Init(&Blink, period_2us);
 
     // Set LCD contrast
     uint8_t const contrast = 0xA8;
@@ -432,6 +387,8 @@ void Program16_3(void) {
 }
 
 
+/*
 void main(void){
-    Program16_3();
+    Program1();
 }
+*/
