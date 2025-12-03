@@ -28,77 +28,101 @@
 		<link>
 			<name>ADC14.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/ADC14.c</locationURI>
+			<locationURI>copy_PARENT11/inc/ADC14.c</locationURI>
 		</link>
 		<link>
 			<name>Bump.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/Bump.c</locationURI>
+			<locationURI>copy_PARENT11/inc/Bump.c</locationURI>
+		</link>
+		<link>
+			<name>Classifier.c</name>
+			<type>1</type>
+			<locationURI>copy_PARENT11/inc/Classifier.c</locationURI>
 		</link>
 		<link>
 			<name>Clock.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/Clock.c</locationURI>
+			<locationURI>copy_PARENT11/inc/Clock.c</locationURI>
 		</link>
 		<link>
 			<name>CortexM.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/CortexM.c</locationURI>
+			<locationURI>copy_PARENT11/inc/CortexM.c</locationURI>
 		</link>
 		<link>
 			<name>IRDistance.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/IRDistance.c</locationURI>
+			<locationURI>copy_PARENT11/inc/IRDistance.c</locationURI>
 		</link>
 		<link>
 			<name>LPF.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/LPF.c</locationURI>
+			<locationURI>copy_PARENT11/inc/LPF.c</locationURI>
 		</link>
 		<link>
 			<name>LaunchPad.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/LaunchPad.c</locationURI>
+			<locationURI>copy_PARENT11/inc/LaunchPad.c</locationURI>
 		</link>
 		<link>
 			<name>Motor.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/Motor.c</locationURI>
+			<locationURI>copy_PARENT11/inc/Motor.c</locationURI>
 		</link>
 		<link>
 			<name>Nokia5110.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/Nokia5110.c</locationURI>
+			<locationURI>copy_PARENT11/inc/Nokia5110.c</locationURI>
 		</link>
 		<link>
 			<name>PWM.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/PWM.c</locationURI>
+			<locationURI>copy_PARENT11/inc/PWM.c</locationURI>
 		</link>
 		<link>
 			<name>SPIA3.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/SPIA3.c</locationURI>
+			<locationURI>copy_PARENT11/inc/SPIA3.c</locationURI>
 		</link>
 		<link>
 			<name>TA3InputCapture.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/TA3InputCapture.c</locationURI>
+			<locationURI>copy_PARENT11/inc/TA3InputCapture.c</locationURI>
 		</link>
 		<link>
 			<name>Tachometer.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/Tachometer.c</locationURI>
+			<locationURI>copy_PARENT11/inc/Tachometer.c</locationURI>
+		</link>
+		<link>
+			<name>TimerA1.c</name>
+			<type>1</type>
+			<locationURI>copy_PARENT11/inc/TimerA1.c</locationURI>
 		</link>
 		<link>
 			<name>TimerA2.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/TimerA2.c</locationURI>
+			<locationURI>copy_PARENT11/inc/TimerA2.c</locationURI>
 		</link>
 		<link>
 			<name>UART0.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/UART0.c</locationURI>
+			<locationURI>copy_PARENT11/inc/UART0.c</locationURI>
 		</link>
 	</linkedResources>
+	<variableList>
+		<variable>
+			<name>copy_PARENT</name>
+			<value>$%7BPARENT-1-PROJECT_LOC%7D/ECE382_Plovanich_Jack</value>
+		</variable>
+		<variable>
+			<name>copy_PARENT1</name>
+			<value>$%7Bcopy_PARENT%7D/ECE382_Plovanich_Jack</value>
+		</variable>
+		<variable>
+			<name>copy_PARENT11</name>
+			<value>$%7Bcopy_PARENT1%7D/ECE382_Plovanich_Jack</value>
+		</variable>
+	</variableList>
 </projectDescription>

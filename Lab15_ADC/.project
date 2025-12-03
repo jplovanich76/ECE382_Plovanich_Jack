@@ -31,11 +31,6 @@
 			<locationURI>PARENT-1-PROJECT_LOC/inc/ADC14.c</locationURI>
 		</link>
 		<link>
-			<name>Classifier.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/inc/Classifier.c</locationURI>
-		</link>
-		<link>
 			<name>Clock.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc/Clock.c</locationURI>

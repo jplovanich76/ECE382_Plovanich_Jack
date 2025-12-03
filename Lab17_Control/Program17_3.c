@@ -1,43 +1,4 @@
 // Program17_3.c
-// Implements a proportional (P) controller for a wall-following robot on the MSP432 microcontroller.
-// The system reads wall distances using IR sensors, adjusts motor speeds via PWM,
-// and displays relevant information on an LCD screen.
-//
-// Author: Stan Baek
-// Department of Electrical & Computer Engineering
-// United States Air Force Academy
-// Date: June 08, 2022
-// Comments revised by Stan Baek
-// October 25, 2024
-
-/*
-Simplified BSD License (FreeBSD License)
-Copyright (c) 2022, Stan Baek, All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and documentation are
-those of the authors and should not be interpreted as representing official
-policies, either expressed or implied, of the FreeBSD Project.
-*/
 
 // Required libraries for microcontroller functions and peripherals
 #include <stdbool.h>
@@ -55,6 +16,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "../inc/IRDistance.h"      // Infrared distance measurement
 #include "../inc/Nokia5110.h"       // Nokia LCD
 #include "../inc/LPF.h"             // Low-pass filter
+#include "../inc/Classifier.h"
 
 
 /************** Program17_3 ******************************************
@@ -74,10 +36,11 @@ policies, either expressed or implied, of the FreeBSD Project.
 #define MINMAX(Min, Max, X) ((X) < (Min) ? (Min) : ((X) > (Max) ? (Max) : (X)))
 
 // PWM parameters for controlling motor speeds.
-#define PWM_AVERAGE 350                 // Average PWM for balancing
-#define SWING 300
-#define PWMIN (PWM_AVERAGE - SWING)     // Minimum PWM threshold
-#define PWMAX (PWM_AVERAGE + SWING)     // Maximum PWM threshold
+#define PWM_AVERAGE 550                 // Average PWM for balancing
+#define PWMIN 300     // Minimum PWM threshold
+#define PWMAX 650     // Maximum PWM threshold
+#define WEAKSIDE_TURN 300
+#define STRONGSIDE_TURN 600
 
 // This divider scales down the controller output by dividing it inside the Controller.
 // Specifically, (Kp * error) / GAIN_DIVIDER is used to compute the controller output.
@@ -93,7 +56,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 // static int16_t Kp = 0;               // Stable Kp value of 100 (1.0 due to GAIN_DIVIDER)
 
 // solution
-static int16_t Kp = 30; //best one
+static int16_t Kp = 35; //best one
 
 
 // =============== IMPORTANT NOTE =====================================
@@ -156,7 +119,6 @@ static void LCDOut(void) {
     Nokia5110_SetCursor2(3,4); Nokia5110_OutSDec(Left, 6);    // Left distance
     Nokia5110_SetCursor2(4,4); Nokia5110_OutSDec(Center, 6);  // Center distance
     Nokia5110_SetCursor2(5,4); Nokia5110_OutSDec(Right, 6);   // Right distance
-    Nokia5110_SetCursor2(6,4); Nokia5110_OutSDec(Error, 6);   // Error value
 }
 
 
@@ -355,6 +317,10 @@ static void IRsampling(void){
 
 // Proportional controller function to keep the robot centered between two walls using IR sensors.
 // Runs at 100 Hz (configured by TimerA ISR).
+scenario_t correctedDecision = Straight;            //set up classify usage
+static int numTurns = 0;
+static uint16_t Time_1ms = 0;
+
 static void Controller(void){
 
     // If the controller is disabled, exit the function without performing any control actions
@@ -369,47 +335,153 @@ static void Controller(void){
         return;
     }
 
-    // Controller is enabled, so proceed with executing the control logic
+    static int ticks = 0;
 
-    // ====================================================================
-    // Lab 17 implementation begins here
-    // ====================================================================
-
-    // Implement a proportional controller to maintain distance from both walls
-
-    // Calculate error as the difference, R - L
+    int16_t leftDuty_permil = PWM_AVERAGE;
+    int16_t rightDuty_permil = PWM_AVERAGE;
     Error = Right - Left;                       //define error here since it affects correction and implementation to fix speeds
-    int32_t FixThatJawn = Kp * Error;           //correction = error * Kp
 
-    // Calculate the left and right motor duty cycles based on proportional control
-    int16_t leftDuty_permil = PWM_AVERAGE + (FixThatJawn / GAIN_DIVIDER);           //sign of error takes care of needing to have if/else statements
-    int16_t rightDuty_permil = PWM_AVERAGE - (FixThatJawn / GAIN_DIVIDER);
-    // Ensure the calculated PWM duty cycles are within the motor's operational range
-    leftDuty_permil = MINMAX(PWMIN, PWMAX, leftDuty_permil);
+    //basically, all the special cases, or edits, to classify are here
+    //classify() itself remains mostly unchanged
+    //use ticks incrementing to essentially correct the classification and power through the potential misclassification as a fail safe
+    //we correct the decision for LCD purposes
+
+    if (ticks > 0) {
+        ticks--;
+
+        if (correctedDecision == RightJoint) {
+            Right = 200;
+            leftDuty_permil = PWM_AVERAGE;
+            rightDuty_permil = PWM_AVERAGE;
+        }
+        else if (correctedDecision == Blocked) {            //lots of fail-safes here due to problems making it stop
+            Right = 0;
+            Left = 0;
+            Center = 0;
+            leftDuty_permil = 0;
+            rightDuty_permil = 0;
+            IsActuatorEnabled == false;                     //this should be the main driver in making it stop
+            Motor_Brake();
+            // Use Time_1ms to keep the LED light RED for 5 ms and BLUE for 5 ms.
+            Time_1ms++;
+
+            if (Time_1ms < 5) {
+                LaunchPad_RGB(RED);
+            }
+            else if (Time_1ms <= 9) {
+                LaunchPad_RGB(BLUE);
+            }
+
+            // if it increments to 10, roll over to 0.
+            else if (Time_1ms >= 1000) {
+                Time_1ms = 0;
+            }
+
+            else {
+
+            }
+         }
+        else if (correctedDecision == LeftJoint) {
+            Left = 200;
+            leftDuty_permil = PWM_AVERAGE;
+            rightDuty_permil = PWM_AVERAGE;
+        }
+        else if (correctedDecision == TeeJoint) {
+            Left = 200;
+            leftDuty_permil = STRONGSIDE_TURN;
+            rightDuty_permil = WEAKSIDE_TURN;
+            numTurns++;
+        }
+        else if (correctedDecision == RightTurn) {
+            leftDuty_permil = STRONGSIDE_TURN;
+            rightDuty_permil = WEAKSIDE_TURN;
+            numTurns++;
+        }
+        else if(correctedDecision == LeftTurn) {
+            leftDuty_permil = WEAKSIDE_TURN;
+            rightDuty_permil = STRONGSIDE_TURN;
+            numTurns++;
+        }
+
+        leftDuty_permil  = MINMAX(PWMIN, PWMAX, leftDuty_permil);
+        rightDuty_permil = MINMAX(PWMIN, PWMAX, rightDuty_permil);
+
+        if (IsActuatorEnabled) {
+            Motor_Forward(leftDuty_permil, rightDuty_permil); // Set motor speeds to maintain center position
+        }
+        else {
+            Motor_Brake();
+        }
+
+        // Track the number of times the controller has executed for scheduling and logging purposes
+        NumControllerExecuted++;
+        return;
+    }
+
+    scenario_t decision = Classify(Left, Center, Right);
+
+    if (decision == RightJoint) {
+       ticks = 155;                          //will trigger the exception for a period of time, more ticks -> longer "locked in" decision
+       correctedDecision = decision;
+       Right = 200;                         //virtual wall
+       leftDuty_permil = PWM_AVERAGE;
+       rightDuty_permil = PWM_AVERAGE;                              //still need immediate change
+    }
+    else if (decision == LeftJoint) {
+        ticks = 35;                          //will trigger the exception for a period of time
+        correctedDecision = decision;
+        Left = 200;
+        leftDuty_permil = PWM_AVERAGE;
+        rightDuty_permil = PWM_AVERAGE;
+    }
+    else if (decision == TeeJoint) {
+        ticks = 35;
+        correctedDecision = decision;
+        Left = 200;
+        leftDuty_permil = STRONGSIDE_TURN;              //force wheels to spin faster on one end
+        rightDuty_permil = WEAKSIDE_TURN;               //slower on other - not a fan of PWMAX or PWMIN
+    }
+    else if (decision == LeftTurn) {
+       ticks = 35;
+       correctedDecision = decision;
+       leftDuty_permil = WEAKSIDE_TURN;
+       rightDuty_permil = STRONGSIDE_TURN;
+    }
+    else if (decision == RightTurn) {
+       correctedDecision = decision;
+       ticks = 35;
+       leftDuty_permil = STRONGSIDE_TURN;
+       rightDuty_permil = WEAKSIDE_TURN;
+    }
+    else if (numTurns >= 4 && decision == Blocked) {                    //stop condition
+        ticks = 10;                                         //force it to slide up to other if-statement section and stop, should coast for a second
+        correctedDecision = decision;
+        Motor_Coast();
+    }
+    else {
+        decision = Straight;
+        Error = Right - Left;                       //define error here since it affects correction and implementation to fix speeds
+        int32_t FixThatJawn = Kp * Error;           //correction = error * Kp
+        leftDuty_permil = PWM_AVERAGE + (FixThatJawn / GAIN_DIVIDER);
+        rightDuty_permil = PWM_AVERAGE - (FixThatJawn / GAIN_DIVIDER);
+    }
+
+    leftDuty_permil  = MINMAX(PWMIN, PWMAX, leftDuty_permil);
     rightDuty_permil = MINMAX(PWMIN, PWMAX, rightDuty_permil);
-
-
-    // ====================================================================
-    // Do not modify anything below this line
-    // ====================================================================
 
     // Update motor speed values based on calculated duty cycles if actuator control is enabled
     if (IsActuatorEnabled) {
         Motor_Forward(leftDuty_permil, rightDuty_permil); // Set motor speeds to maintain center position
-
-        // If there is remaining space in the buffer, store control data for analysis
-        if (BufferIndex < BUFFER_SIZE) {
-            ErrorBuffer[BufferIndex] = Error;                 // Store current error value
-            LeftDutyBuffer[BufferIndex] = leftDuty_permil;    // Store left motor duty cycle
-            RightDutyBuffer[BufferIndex] = rightDuty_permil;  // Store right motor duty cycle
-            BufferIndex++;                                    // Increment buffer index
-        }
+    }
+    else {
+        Motor_Brake();
     }
 
     // Track the number of times the controller has executed for scheduling and logging purposes
     NumControllerExecuted++;
 
 }
+
 
 
 // Main program to initialize peripherals, start control loop, and handle data transmission.
