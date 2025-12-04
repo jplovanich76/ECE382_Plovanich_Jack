@@ -20,6 +20,46 @@
 #include "Program17_1.h"
 #include "Program17_3.h"
 
+scenario_t Classify(int32_t left_mm, int32_t center_mm, int32_t right_mm) {
+
+    // Check if IR sensor readings are invalid first
+    if ((left_mm   < IRMIN) || (left_mm   > IRMAX) ||
+        (center_mm < IRMIN) || (center_mm > IRMAX) ||
+        (right_mm  < IRMIN) || (right_mm  > IRMAX)) {
+        return ClassificationError;
+    }
+
+    // Front ‚Äúblocked-ish‚Äù
+    if (center_mm < CENTEROPEN) {   // blocked, right turn, left turn, tee
+
+        if ((left_mm < SIDEMAX) && (right_mm < SIDEMAX)) {
+            return Blocked;
+        }
+        else if ((left_mm < SIDEMAX) && (right_mm >= SIDEMAX)) {
+            return RightTurn;
+        }
+        else if ((left_mm >= SIDEMAX) && (right_mm < SIDEMAX)) {
+            return LeftTurn;
+        }
+        else { // left_mm >= SIDEMAX && right_mm >= SIDEMAX
+            return TeeJoint;
+        }
+    }
+    // Front open
+    else {                         // center_mm >= CENTEROPEN: straight, right joint, left joint
+
+        if ((left_mm < SIDEMAX) && (right_mm < SIDEMAX)) {
+            return Straight;
+        }
+        else if ((left_mm < SIDEMAX) && (right_mm >= SIDEMAX)) {
+            return RightJoint;
+        }
+        else {
+            return LeftJoint;
+        }
+    }
+}
+
 
 
 /************** Program17_3 ******************************************
@@ -28,7 +68,7 @@
 
 // This macro limits a value within a specified minimum and maximum range.
 // MINMAX ensures that the value of X stays within the bounds [Min, Max].
-// If X is less than Min, itís set to Min. If X is greater than Max, itís set to Max.
+// If X is less than Min, it‚Äôs set to Min. If X is greater than Max, it‚Äôs set to Max.
 // This helps prevent overflows or invalid values that could interfere with system stability.
 // Usage example:
 //      x = MINMAX(0, 100, x);  // This limits x to be between 0 and 100.
@@ -50,7 +90,7 @@
 // This allows us to select real (non-integer) values for Kp, such as 1.01, 2.43, and 3.75,
 // which increases flexibility in tuning Kp.
 // Without this scaling, we would be restricted to integer values like 1, 2, and 3.
-// Note: Using a floating-point type for Kp would slow down computations significantlyóover 1000 times.
+// Note: Using a floating-point type for Kp would slow down computations significantly‚Äîover 1000 times.
 // By using integers with a divider, we maintain computational efficiency while achieving precise tuning.
 #define GAIN_DIVIDER 100
 
@@ -347,7 +387,7 @@ static void Controller(void){
     //basically, all the special cases, or edits, to classify are here
     //classify() itself remains mostly unchanged
     //use ticks incrementing to essentially correct the classification and power through the potential misclassification as a fail safe
-    //we correct the decision for LCD purposes
+    //we "correct" the decision, allowing a decision to be locked-in for a period of time
 
     if (ticks > 0) {
         ticks--;
@@ -424,7 +464,7 @@ static void Controller(void){
     scenario_t decision = Classify(Left, Center, Right);
 
     if (decision == RightJoint) {
-       ticks = 155;                          //will trigger the exception for a period of time, more ticks -> longer "locked in" decision
+       ticks = 155;                          //will trigger the exception for a period of time, more ticks -> longer "locked in" decision - these ticks increment based on the repetition of Controller being called, so it is effectively a sub-timer
        correctedDecision = decision;
        Right = 200;                         //virtual wall
        leftDuty_permil = PWM_AVERAGE;
