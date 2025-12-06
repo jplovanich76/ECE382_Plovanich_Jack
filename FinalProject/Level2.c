@@ -20,6 +20,11 @@
 #include "Program17_1.h"
 #include "Program17_3.h"
 
+#define CENTEROPEN 550
+#define SIDEMAX 350
+#define IRAMX 800
+#define IRMIN 50
+
 scenario_t Classify(int32_t left_mm, int32_t center_mm, int32_t right_mm) {
 
     // Check if IR sensor readings are invalid first
